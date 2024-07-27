@@ -1,0 +1,53 @@
+# Go build artifacts
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+
+# Output of the go coverage tool, specifically when used with LiteIDE
+*.out
+
+# Dependencies
+/vendor/
+/vendor/**
+
+# Go modules
+go.sum
+
+# Go workspace file
+go.work
+go.work.sum
+
+# IDE/editor specific files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS specific files
+.DS_Store
+Thumbs.db
+
+# Logs
+logs/
+*.log
+
+# Binaries
+bin/
+*.exe
+*.dll
+*.so
+*.dylib
+
+# Configuration files
+*.config
+*.env
+
+# Test results
+test-results/
+*.junit.xml
+
+docker/
