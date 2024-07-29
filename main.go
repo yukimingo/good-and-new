@@ -18,6 +18,11 @@ func main() {
 		Email:    "test3@example.com",
 		Password: "password3",
 	}
+	n := &models.News{
+		Title:       "title2",
+		Description: "これはテスト2です",
+		UserID:      7,
+	}
 	// updatedUser := &models.User{
 	// 	Name:     "updated user",
 	// 	Email:    "updated@example.com",
@@ -90,6 +95,14 @@ func main() {
 		user.Password = "updatedPassword"
 		if err := db.Save(user).Error; err != nil {
 			ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Unexpected error"})
+			return
+		}
+
+		ctx.Status(http.StatusOK)
+	})
+	r.POST("/news", func(ctx *gin.Context) {
+		if err := db.Create(n).Error; err != nil {
+			ctx.JSON(http.StatusInternalServerError, gin.H{"error": "failed to create news"})
 			return
 		}
 
