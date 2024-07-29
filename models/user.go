@@ -7,4 +7,5 @@ type User struct {
 	Name     string `gorm:"not null"`
 	Email    string `gorm:"not null;unique"`
 	Password string `gorm:"not null"`
+	News     []News `gorm:"foreignKey:UserID"`
 }
