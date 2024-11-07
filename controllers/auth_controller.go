@@ -10,6 +10,7 @@ import (
 )
 
 type IAuthController interface {
+	Login(ctx *gin.Context)
 	FindAll(ctx *gin.Context)
 	FindUser(ctx *gin.Context)
 	FindUserById(ctx *gin.Context)
@@ -23,6 +24,21 @@ type AuthController struct {
 
 func NewAuthController(u usecases.IAuthUsecase) IAuthController {
 	return &AuthController{usecase: u}
+}
+
+func (c *AuthController) Login(ctx *gin.Context) {
+	var loginInput dto.LoginInput
+	if err := ctx.ShouldBindJSON(&loginInput); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	token, err := c.usecase.Login(loginInput.Email, loginInput.Password)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err})
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{"token": token})
 }
 
 func (c *AuthController) FindAll(ctx *gin.Context) {
@@ -53,12 +69,14 @@ func (c *AuthController) CreateUser(ctx *gin.Context) {
 		return
 	}
 
-	if err := c.usecase.CreateUser(userInput); err != nil {
+	token, err := c.usecase.CreateUser(userInput)
+
+	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "failed to create user"})
 		return
 	}
 
-	ctx.Status(http.StatusOK)
+	ctx.JSON(http.StatusOK, gin.H{"token": token})
 }
 
 func (c *AuthController) DeleteUser(ctx *gin.Context) {

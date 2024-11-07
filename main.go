@@ -3,12 +3,15 @@ package main
 import (
 	"good-and-new/controllers"
 	"good-and-new/infra"
+	"good-and-new/middlewares"
 	"good-and-new/models"
 	"good-and-new/repositories"
 	"good-and-new/usecases"
 	"net/http"
 	"strconv"
+	"time"
 
+	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 )
 
@@ -19,24 +22,47 @@ func main() {
 	authUsecase := usecases.NewAuthUsecase(authRepository)
 	authController := controllers.NewAuthController(authUsecase)
 
-	n := &models.News{
-		Title:       "title2",
-		Description: "これはテスト2です",
-		UserID:      7,
-	}
+	NewsRepository := repositories.NewNewsRepository(db)
+	NewsUsecase := usecases.NewNewsUsecase(NewsRepository)
+	newsController := controllers.NewNewsController(NewsUsecase)
 
 	r := gin.Default()
-	r.POST("/users", authController.CreateUser)
+	r.Use(cors.New(cors.Config{
+		AllowOrigins:     []string{"http://localhost:3000"}, // 許可するオリジンを指定
+		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE"},
+		AllowHeaders:     []string{"Origin", "Content-Length", "Content-Type"},
+		ExposeHeaders:    []string{"Content-Length"},
+		AllowCredentials: true, // クッキーや認証情報を許可
+		MaxAge:           12 * time.Hour,
+	}))
+	authRouter := r.Group("/users")
+	newsRouter := r.Group("/news")
+	newsRouterWithAuth := r.Group("/news", middlewares.AuthMiddleware(authUsecase))
+	{
+		authRouter.POST("", authController.CreateUser)
 
-	r.GET("/users", authController.FindAll)
+		authRouter.POST("/login", authController.Login)
 
-	r.GET("/users/:email", authController.FindUser)
+		authRouter.GET("", authController.FindAll)
 
-	r.GET("/user/:id", authController.FindUserById)
+		authRouter.GET("/email/:email", authController.FindUser)
 
-	r.DELETE("/users/:id", authController.DeleteUser)
+		authRouter.GET("/:id", authController.FindUserById)
 
-	r.PUT("/users/:id", func(ctx *gin.Context) {
+		authRouter.DELETE("/:id", authController.DeleteUser)
+	}
+
+	{
+		newsRouter.GET("", newsController.FindAll)
+
+		newsRouterWithAuth.GET("/:id", newsController.FindById)
+
+		newsRouterWithAuth.POST("", newsController.Create)
+
+		newsRouterWithAuth.DELETE("/:id", newsController.Delete)
+	}
+
+	authRouter.PUT("/:id", func(ctx *gin.Context) {
 		var user models.User
 		userId, err := strconv.ParseUint(ctx.Param("id"), 10, 64)
 		if err != nil {
@@ -52,14 +78,6 @@ func main() {
 		user.Password = "updatedPassword"
 		if err := db.Save(user).Error; err != nil {
 			ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Unexpected error"})
-			return
-		}
-
-		ctx.Status(http.StatusOK)
-	})
-	r.POST("/news", func(ctx *gin.Context) {
-		if err := db.Create(n).Error; err != nil {
-			ctx.JSON(http.StatusInternalServerError, gin.H{"error": "failed to create news"})
 			return
 		}
 

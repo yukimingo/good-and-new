@@ -10,6 +10,7 @@ import (
 type IAuthRepository interface {
 	FindAll() (*[]models.User, error)
 	FindUser(email string) (*models.User, error)
+	FindLatestUser() (*models.User, error)
 	FindUserById(id uint64) (*models.User, error)
 	Create(user models.User) error
 	DeleteUser(id uint64) error
@@ -29,6 +30,14 @@ func (r *AuthRepository) FindAll() (*[]models.User, error) {
 		return nil, err
 	}
 	return &users, nil
+}
+
+func (r *AuthRepository) FindLatestUser() (*models.User, error) {
+	var user models.User
+	if err := r.db.Order("id DESC").First(&user).Error; err != nil {
+		return nil, err
+	}
+	return &user, nil
 }
 
 func (r *AuthRepository) FindUser(email string) (*models.User, error) {
